@@ -4,14 +4,14 @@
   "version": "0.1.0",
   "private": true,
   "author": {
-    "name": "Your Name",
-    "email": "your.email@domain.com",
-    "url": "https://your-website.com"
+    "name": "Rich Wareham",
+    "email": "rich.github@richwareham.com",
+    "url": "https://github.com/rjw57"
   },
   "build": {
-    "appId": "com.my-website.my-app",
-    "productName": "MyApp",
-    "copyright": "Copyright © 2019 ${author}",
+    "appId": "com.richwareham.redjs",
+    "productName": "RedJS",
+    "copyright": "Copyright © 2020 ${author}",
     "mac": {
       "category": "public.app-category.utilities"
     },
