@@ -1,51 +1,68 @@
 import * as React from 'react'
 
-import Screen from './components/Screen';
+import Screen, {Buffer} from './components/Screen';
 
 import './App.css';
 
 export default () => {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [rows, setRows] = React.useState<React.ComponentProps<typeof Screen>['rows']>([]);
-
-  const render: React.ComponentProps<typeof Screen>['onResize'] = ({rowCount, colCount}) => {
-    const rows = Array(rowCount).fill(null).map(() => (
-      Array(colCount).fill(null).map(() => ({
+  const [buffer, setBuffer] = React.useState<Buffer>(
+    Buffer.createFilledWithCell(
+      25, 80,
+      {
         glyph: '\u2591',
         foregroundColour: '#00f',
         backgroundColour: '#888',
+      },
+    )
+  );
+
+  const redraw = (buffer: Buffer) => {
+    const top = Buffer.createFilledWithCell(1, Math.max(buffer.columnCount, 20), {
+      glyph: ' ',
+      foregroundColour: 'black',
+      backgroundColour: '#888',
+    });
+    Array.from('File').forEach((glyph, idx) => {top.lines[0][idx+2].glyph = glyph});
+    top.lines[0][2].foregroundColour = '#800';
+
+    const bottom = Buffer.createFilledWithCell(1, buffer.columnCount, {
+      glyph: ' ',
+      foregroundColour: 'black',
+      backgroundColour: '#888',
+    });
+
+    return buffer.withBufferAt(0, 0, top).withBufferAt(buffer.lineCount-1, 0, bottom);
+  }
+
+  const randomChange = () => {
+    setBuffer(buffer => {
+      const lineIdx = Math.floor(Math.random() * buffer.lineCount);
+      const colIdx = Math.floor(Math.random() * buffer.columnCount);
+      return buffer.withBufferAt(lineIdx, colIdx, Buffer.createFilledWithCell(1, 1, {
+        glyph: 'X', foregroundColour: 'yellow', backgroundColour: 'blue',
       }))
-    ));
+    });
+    window.setTimeout(randomChange, 25);
+  };
+  React.useEffect(() => {randomChange();}, []);
 
-    rows[0] = rows[0].map(cell => ({...cell, foregroundColour: '#000', glyph: ' '}));
-    rows[rows.length-1] = rows[rows.length-1].map(
-      cell => ({...cell, foregroundColour: '#000', glyph: ' '})
+  const resizeHandler: React.ComponentProps<typeof Screen>['onResize'] = (
+    {lineCount, columnCount}
+  ) => {
+    const newBuffer = Buffer.createFilledWithCell(
+      lineCount, columnCount,
+      {
+        glyph: '\u2591',
+        foregroundColour: '#00f',
+        backgroundColour: '#888',
+      },
     );
-    Array.from('File').forEach((glyph, idx) => {rows[0][idx+2].glyph = glyph});
-    rows[0][2].foregroundColour = '#800';
-
-    setRows(rows);
+    setBuffer(redraw(newBuffer));
   };
 
-  React.useEffect(() => { render({rowCount: 25, colCount: 80}) }, []);
-
-//    const randomChange = () => {
-//      if(rows) {
-//        const row = rows[Math.floor(Math.random() * rows.length)];
-//        const cell = row[Math.floor(Math.random() * row.length)];
-//        cell.glyph = 'X';
-//        console.log('foo');
-//        setRows(rows);
-//      }
-//      window.setTimeout(randomChange, 100);
-//    };
-//    randomChange();
-
-  //React.useEffect(() => { randomChange(); }, []);
-
   return (
-    <div className="app" ref={ref}>
-      <Screen rows={rows} className="app-screen" />
+    <div className="app">
+      <Screen buffer={buffer} onResize={resizeHandler} className="app-screen" />
     </div>
   );
 };
