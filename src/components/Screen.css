@@ -7,11 +7,3 @@
   font-family: "PxPlus IBM VGA8";
   src: url("/fonts/PxPlus%20(TrueType%20-%20extended%20charset)/PxPlus_IBM_VGA8.ttf") format("truetype");
 }
-
-.screen {
-  background-color: black;
-}
-
-.screen canvas {
-  vertical-align: bottom;
-}

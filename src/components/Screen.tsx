@@ -11,52 +11,90 @@ export interface Cell {
 
 export type Row = Array<Cell>;
 
-export interface ScreenProps {
+export interface ScreenProps extends React.ComponentProps<'canvas'> {
   rows?: Array<Row>;
-  rowCount: number;
-  colCount: number;
+  onResize?: (event: {rowCount: number, colCount: number}) => void;
 }
 
-export default ({ rows = [], rowCount = 25, colCount = 80}: ScreenProps) => {
-  const scale = window.devicePixelRatio;
-  const glyphWidth = 8, glyphHeight = 16;
+interface FontSpec {
+  font: string;
+  glyphWidth: number;
+  glyphHeight: number;
+}
+
+export default ({ rows = [], onResize, ...elementProps}: ScreenProps) => {
+  const [drawnRows, setDrawnRows] = React.useState<ScreenProps['rows']>([]);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [fontSpec, setFontSpec] = React.useState<FontSpec | null>(null);
+  const {width: canvasWidth, height: canvasHeight} = useComponentSize(canvasRef);
 
-  React.useEffect(() => {
-    if(canvasRef.current === null) { return; }
-    const ctx = canvasRef.current.getContext('2d');
-    if(ctx === null) { return; }
+  const scale = window.devicePixelRatio;
+  const renderCanvas = ({onlyDirty = true} = {}) => {
+    if(!canvasRef.current || !fontSpec) { return; }
 
-    const font = `${glyphHeight}px "PxPlus IBM VGA8"`;
+    const {font, glyphWidth, glyphHeight} = fontSpec;
 
-    // TypeScript does not yet have the font loading API types so work around it
-    // for the moment.
-    (document as any).fonts.load(font).then(() => {
-      ctx.scale(scale, scale);
-      ctx.textBaseline = 'bottom';
-      ctx.font = font
-      rows.map((row, rowIdx) => {
-        row.map((cell, cellIdx) => {
+    const ctx = canvasRef.current.getContext('2d', {alpha: false});
+    if(!ctx) { return; }
+
+    ctx.scale(scale, scale);
+    ctx.textBaseline = 'bottom';
+    ctx.font = font;
+
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    console.log(new Date().toISOString());
+    let cnt = 0;
+    rows.forEach((row, rowIdx) => {
+      const drawnRow = drawnRows && drawnRows[rowIdx];
+      row.forEach((cell, cellIdx) => {
+        const drawnCell = drawnRow && drawnRow[cellIdx];
+        if(!onlyDirty || (drawnCell !== cell)) {
           ctx.fillStyle = cell.backgroundColour;
           ctx.fillRect(cellIdx * glyphWidth, rowIdx * glyphHeight, glyphWidth, glyphHeight);
           ctx.fillStyle = cell.foregroundColour;
           ctx.fillText(cell.glyph, cellIdx * glyphWidth, (rowIdx + 1) * glyphHeight)
-        })
-      });
+          cnt++;
+        }
+      })
     });
-  }, [canvasRef, rows, rowCount, colCount]);
+    console.log(new Date().toISOString());
+    console.log(cnt);
+  };
+
+  React.useEffect(() => {
+    const font = '16px "PxPlus IBM VGA8"';
+
+    // TypeScript does not yet have the font loading API types so work around it for the moment.
+    (document as any).fonts.load(font).then(() => setFontSpec({
+      font,
+      glyphHeight: 16,
+      glyphWidth: 8,
+    }))
+  }, [setFontSpec]);
+
+  React.useEffect(() => {
+    if(!canvasRef.current || (canvasWidth === null) || (canvasHeight === null) || !fontSpec) {
+      return;
+    }
+
+    canvasRef.current.width = (canvasWidth || 640) * scale;
+    canvasRef.current.height = (canvasHeight || 400) * scale;
+
+    renderCanvas({onlyDirty: false});
+
+    if(onResize) {
+      onResize({
+        rowCount: Math.floor((canvasHeight || 400) / fontSpec.glyphHeight),
+        colCount: Math.floor((canvasWidth || 640) / fontSpec.glyphWidth),
+      });
+    }
+  }, [canvasRef, fontSpec, canvasWidth, canvasHeight]);
+
+  React.useEffect(() => { renderCanvas(); }, [rows, fontSpec]);
 
   return (
-    <div className="screen">
-      <canvas
-        ref={canvasRef}
-        width={colCount * glyphWidth * scale}
-        height={rowCount * glyphHeight * scale}
-        style={{
-          width: `${colCount * glyphWidth}px`,
-          height: `${rowCount * glyphHeight}px`,
-        }}
-      />
-    </div>
+    <canvas ref={canvasRef} {...elementProps} />
   );
 };

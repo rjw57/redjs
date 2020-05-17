@@ -1,5 +1,4 @@
 import * as React from 'react'
-import useComponentSize from '@rehooks/component-size'
 
 import Screen from './components/Screen';
 
@@ -7,17 +6,11 @@ import './App.css';
 
 export default () => {
   const ref = React.useRef<HTMLDivElement>(null);
-  // const { width: windowWidth, height: windowHeight } = useComponentSize(ref);
-  const windowWidth = 640, windowHeight = 400;
   const [rows, setRows] = React.useState<React.ComponentProps<typeof Screen>['rows']>([]);
 
-  const screenRowCount = Math.floor((windowHeight || 640) / 16);
-  const screenColCount = Math.floor((windowWidth || 400) / 8);
-
-  React.useEffect(() => {
-    console.log(screenRowCount, screenColCount);
-    const rows = Array(screenRowCount).fill(null).map(() => (
-      Array(screenColCount).fill(null).map(() => ({
+  const render: React.ComponentProps<typeof Screen>['onResize'] = ({rowCount, colCount}) => {
+    const rows = Array(rowCount).fill(null).map(() => (
+      Array(colCount).fill(null).map(() => ({
         glyph: '\u2591',
         foregroundColour: '#00f',
         backgroundColour: '#888',
@@ -32,11 +25,27 @@ export default () => {
     rows[0][2].foregroundColour = '#800';
 
     setRows(rows);
-  }, [screenRowCount, screenColCount]);
+  };
+
+  React.useEffect(() => { render({rowCount: 25, colCount: 80}) }, []);
+
+//    const randomChange = () => {
+//      if(rows) {
+//        const row = rows[Math.floor(Math.random() * rows.length)];
+//        const cell = row[Math.floor(Math.random() * row.length)];
+//        cell.glyph = 'X';
+//        console.log('foo');
+//        setRows(rows);
+//      }
+//      window.setTimeout(randomChange, 100);
+//    };
+//    randomChange();
+
+  //React.useEffect(() => { randomChange(); }, []);
 
   return (
-    <div className="App" ref={ref}>
-      <Screen rows={rows} rowCount={screenRowCount} colCount={screenColCount}/>
+    <div className="app" ref={ref}>
+      <Screen rows={rows} className="app-screen" />
     </div>
   );
 };
