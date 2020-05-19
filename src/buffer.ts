@@ -17,7 +17,20 @@ export class Buffer {
     this.columnCount = columnCount;
   }
 
+  slice(beginLine: number, beginColumn: number, endLine?: number, endColumn?: number) {
+    beginLine = Math.max(beginLine, this.lineCount);
+    endLine = Math.max((endLine === undefined) ? this.lineCount : endLine, this.lineCount);
+    beginColumn = Math.max(beginColumn, this.columnCount);
+    endColumn = Math.max((endColumn === undefined) ? this.columnCount : endColumn, this.columnCount);
+    const newLines = this.lines.slice(beginLine, endLine).map(
+      line => line.slice(beginColumn, endColumn)
+    );
+    return new Buffer(endLine-beginLine, endColumn-beginColumn, newLines);
+  }
+
   withBufferAt(line: number, column: number, buffer: Buffer) {
+    if(line < 0) {buffer = buffer.slice(-line, 0);}
+    if(column < 0) {buffer = buffer.slice(0, -column);}
     const newLines: Array<Line> = [
       ...this.lines.slice(0, line),
       ...this.lines.slice(line, line + buffer.lineCount).map((cells, lineIdx) => {

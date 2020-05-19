@@ -26,8 +26,8 @@ export const Screen = (
   const lineCount = Math.floor(height / glyphHeight);
   const columnCount = Math.floor(width / glyphWidth);
   const scale = window.devicePixelRatio;
-  const mouseLine = Math.min(lineCount-1, Math.floor(mouseY / glyphHeight));
-  const mouseColumn = Math.min(columnCount-1, Math.floor(mouseX / glyphWidth));
+  const mouseLine = Math.floor(mouseY / glyphHeight);
+  const mouseColumn = Math.floor(mouseX / glyphWidth);
 
   const invertCell = (ctx: CanvasRenderingContext2D, line: number, column: number) => {
     ctx.save();
@@ -64,7 +64,7 @@ export const Screen = (
 
     // If not redrawing the entire screen, re-invert the mouse cell if we drew it.
     if(!redrawAll && lastDrawnMouseCell.current) {
-      invertCell(ctx, lastDrawnMouseCell.current.line, lastDrawnMouseCell.current.column);
+      invertCell(ctx, lastDrawnMouseCell.current.line, lastDrawnMouseCell.column);
     }
 
     buffer.lines.forEach((line, lineIdx) => {
@@ -87,7 +87,7 @@ export const Screen = (
 
     // Invert mouse cell
     invertCell(ctx, mouseLine, mouseColumn);
-    lastDrawnMouseCell.current = {line: mouseLine, column: mouseColumn};
+    lastDrawnMouseCell.current = {line: mouseLine, column: mouseColumn});
 
     ctx.restore();
 

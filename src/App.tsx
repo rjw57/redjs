@@ -1,4 +1,4 @@
-import * as React from 'react'
+import * as React from 'react';
 
 import {Screen} from './components';
 import {Buffer} from './buffer';
@@ -6,6 +6,8 @@ import {Buffer} from './buffer';
 import './App.css';
 
 export default () => {
+  const [mousePosition, setMousePosition] = React.useState<{line: number, column: number} | null>(null);
+
   const [buffer, setBuffer] = React.useState<Buffer>(
     Buffer.createFilledWithCell(
       25, 80,
@@ -63,7 +65,11 @@ export default () => {
 
   return (
     <div className="app">
-      <Screen buffer={buffer} onResize={resizeHandler} className="app-screen" />
+      <Screen
+        className="app-screen"
+        buffer={buffer}
+        onResize={resizeHandler}
+      />
     </div>
   );
 };
