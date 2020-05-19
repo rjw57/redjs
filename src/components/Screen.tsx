@@ -1,6 +1,8 @@
 import * as React from 'react';
 import useComponentSize from '@rehooks/component-size';
 
+import fontUrl from '../fonts/PxPlus (TrueType - extended charset)/PxPlus_IBM_VGA8.ttf';
+
 export interface Cell {
   glyph: string;
   foregroundColour: string;
@@ -63,10 +65,7 @@ const useFont = () => {
   });
 
   React.useEffect(() => {
-    new FontFace(
-      'PxPlus IBM VGA9',
-      'url("/fonts/PxPlus%20(TrueType%20-%20extended%20charset)/PxPlus_IBM_VGA9.ttf") format("truetype")'
-    ).load().then(fontFace => {
+    new FontFace('Screen', `url(${fontUrl})`).load().then(fontFace => {
       document.fonts.add(fontFace);
       setFontSpec({font: `16px "${fontFace.family}"`, glyphWidth: 9, glyphHeight: 16});
     });
@@ -85,7 +84,9 @@ export default ({buffer, onResize, ...elementProps}: ScreenProps) => {
   const columnCount = Math.floor(width / glyphWidth);
   const scale = window.devicePixelRatio;
 
-  const redraw = (redrawAll: boolean) => {
+  const redraw = (redrawAll: boolean = false) => {
+    const lastDrawnBuffer = lastDrawnBufferRef.current;
+
     if(!ref.current) { return; }
     const ctx = ref.current.getContext('2d', {alpha: false});
     if(!ctx) { return; }
@@ -94,6 +95,19 @@ export default ({buffer, onResize, ...elementProps}: ScreenProps) => {
 
     ctx.scale(scale, scale);
     ctx.font = font;
+
+    // If the buffer size has changed, always redraw everything.
+    redrawAll = (
+      redrawAll
+      || (!!lastDrawnBuffer && (lastDrawnBuffer.lineCount != buffer.lineCount))
+      || (!!lastDrawnBuffer && (lastDrawnBuffer.columnCount != buffer.columnCount))
+    );
+
+    // When redrawing the entire screen, clear it first.
+    if(redrawAll) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
 
     buffer.lines.forEach((line, lineIdx) => {
       const lastDrawnLine = lastDrawnBufferRef.current && lastDrawnBufferRef.current.lines[lineIdx];
@@ -128,7 +142,7 @@ export default ({buffer, onResize, ...elementProps}: ScreenProps) => {
     ref.current.height = height * scale;
     redraw(true);
   }, [width, height]);
-  React.useEffect(() => {console.log(font); redraw(true);}, [font]);
+  React.useEffect(() => {redraw(true);}, [font]);
   React.useEffect(() => {redraw(false);}, [buffer]);
 
   return <canvas ref={ref} {...elementProps} />;
