@@ -1,6 +1,7 @@
 import * as React from 'react'
 
-import Screen, {Buffer} from './components/Screen';
+import {Screen} from './components';
+import {Buffer} from './buffer';
 
 import './App.css';
 
