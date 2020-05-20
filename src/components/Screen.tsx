@@ -38,6 +38,7 @@ export const Screen = (
   }
 
   const redraw = (redrawAll: boolean = false) => {
+    console.log(redrawAll);
     const lastDrawnBuffer = lastDrawnBufferRef.current;
 
     if(!ref.current) { return; }
@@ -96,6 +97,7 @@ export const Screen = (
 
   React.useEffect(() => {
     onMouseCellMove && onMouseCellMove({line: mouseLine, column: mouseColumn});
+    redraw(false);
   }, [mouseLine, mouseColumn]);
 
   React.useEffect(() => {

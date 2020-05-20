@@ -63,8 +63,16 @@ export default () => {
     setBuffer(redraw(newBuffer));
   };
 
+  const keyEventHandler: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
+    console.log(event);
+  };
+
   return (
-    <div className="app">
+    <div className="app"
+      onKeyDown={keyEventHandler}
+      onKeyUp={keyEventHandler}
+      tabIndex={0}
+    >
       <Screen
         className="app-screen"
         buffer={buffer}
