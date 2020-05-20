@@ -38,7 +38,6 @@ export const Screen = (
   }
 
   const redraw = (redrawAll: boolean = false) => {
-    console.log(redrawAll);
     const lastDrawnBuffer = lastDrawnBufferRef.current;
 
     if(!ref.current) { return; }
