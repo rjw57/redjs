@@ -9,11 +9,10 @@ export interface ScreenProps extends React.ComponentProps<'canvas'> {
   buffer: Buffer;
   onResize?: (event: {lineCount: number, columnCount: number}) => void;
   onMouseCellMove?: (event: {line: number, column: number}) => void;
-  onMouseCellClick?: (event: {line: number, column: number}) => void;
 }
 
 export const Screen = (
-  {buffer, onResize, onMouseCellMove, onMouseCellClick, ...elementProps}: ScreenProps
+  {buffer, onResize, onMouseCellMove, ...elementProps}: ScreenProps
 ) => {
   const ref = React.useRef<HTMLCanvasElement>(null);
   const {elX: mouseX, elY: mouseY} = useMouseHovered(ref, {whenHovered: true});

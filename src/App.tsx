@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import {Screen} from './components';
 import {Buffer} from './buffer';
+import {Widget} from './widgets';
 
 import './App.css';
 
@@ -18,6 +19,14 @@ export default () => {
       },
     )
   );
+
+  const requestRedraw = () => {
+    const dirtyRegion = {
+      beginLine: 0, endLine: buffer.lineCount, beginColumn: 0, endColumn: buffer.columnCount
+    };
+    setBuffer(rootWidget.redraw(buffer, dirtyRegion));
+  }
+  const rootWidget = React.useMemo(() => new Widget({requestRedraw}), []);
 
   const redraw = (buffer: Buffer) => {
     const top = Buffer.createFilledWithCell(1, Math.max(buffer.columnCount, 20), {
@@ -52,19 +61,22 @@ export default () => {
   const resizeHandler: React.ComponentProps<typeof Screen>['onResize'] = (
     {lineCount, columnCount}
   ) => {
-    const newBuffer = Buffer.createFilledWithCell(
-      lineCount, columnCount,
-      {
-        glyph: '\u2591',
-        foregroundColour: '#00f',
-        backgroundColour: '#888',
-      },
-    );
-    setBuffer(redraw(newBuffer));
+    rootWidget.dispatchEvent({type: 'resize', lineCount, columnCount});
+    const buffer = Buffer.createFilledWithCell(lineCount, columnCount, {
+      glyph: '\u2591',
+      foregroundColour: '#008',
+      backgroundColour: '#888',
+    });
+    const dirtyRegion = {
+      beginLine: 0, endLine: buffer.lineCount, beginColumn: 0, endColumn: buffer.columnCount
+    };
+    setBuffer(rootWidget.redraw(buffer, dirtyRegion));
   };
 
   const keyEventHandler: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
-    console.log(event);
+    const {type, key, shiftKey, ctrlKey, metaKey, altKey} = event;
+    if((type !== 'keyup') && (type !== 'keydown')) { return; }
+    rootWidget.dispatchEvent({type, key, shiftKey, ctrlKey, metaKey, altKey});
   };
 
   return (
@@ -77,6 +89,14 @@ export default () => {
         className="app-screen"
         buffer={buffer}
         onResize={resizeHandler}
+        onMouseCellMove={event => {
+          const {line, column} = event;
+          setMousePosition({line, column});
+          rootWidget.dispatchEvent({type: 'mousemove', line, column});
+        }}
+        onClick={() => {mousePosition && rootWidget.dispatchEvent({type: 'mouseclick', ...mousePosition});}}
+        onMouseDown={() => {mousePosition && rootWidget.dispatchEvent({type: 'mousedown', ...mousePosition});}}
+        onMouseUp={() => {mousePosition && rootWidget.dispatchEvent({type: 'mouseup', ...mousePosition});}}
       />
     </div>
   );
