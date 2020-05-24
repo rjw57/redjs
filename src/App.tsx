@@ -4,7 +4,7 @@ import useComponentSize from '@rehooks/component-size';
 
 import {Screen} from './components';
 import {Buffer} from './buffer';
-import {Widget} from './widgets';
+import {Display, Widget} from './widgets';
 import {useScreenFont} from './fonts';
 
 import './App.css';

@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import screenFontUrl from './PxPlus (TrueType - extended charset)/PxPlus_IBM_VGA9.ttf';
+import screenFontUrl from './PxPlus (TrueType - extended charset)/PxPlus_IBM_VGA8.ttf';
 
 export interface FontSpec {
   font: string;
@@ -17,7 +17,7 @@ export const useScreenFont = () => {
     const fontFace = new FontFace('Screen', `url(${screenFontUrl})`)
     document.fonts.add(fontFace);
     fontFace.load().then(fontFace => {
-      setFontSpec({font: `16px "${fontFace.family}"`, glyphWidth: 9, glyphHeight: 16});
+      setFontSpec({font: `16px "${fontFace.family}"`, glyphWidth: 8, glyphHeight: 16});
     });
   }, [setFontSpec]);
 
