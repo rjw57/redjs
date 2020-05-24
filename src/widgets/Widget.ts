@@ -1,44 +1,25 @@
-import {Event} from '../events';
 import {Buffer} from '../buffer';
-
-export interface Region {
-  beginLine: number;
-  endLine: number;
-  beginColumn: number;
-  endColumn: number;
-};
-
-export interface WidgetOptions {
-  requestRedraw: (dirtyRegion?: Region) => void;
-};
+import {Region} from './types';
 
 export class Widget {
-  requestRedraw: WidgetOptions['requestRedraw'];
+  parent: Widget | null;
+  size: {lineCount: number, columnCount: number};
 
-  constructor({requestRedraw}: WidgetOptions) {
-    this.requestRedraw = requestRedraw;
+  constructor(parent: Widget | null) {
+    this.parent = parent;
+    this.size = {lineCount: 0, columnCount: 0};
   }
 
-  dispatchEvent(event: Event) {
-    console.log(event);
+  setSize(lineCount: number, columnCount: number) {
+    this.size = {lineCount, columnCount};
   }
 
-  redraw(buffer: Buffer, dirtyRegion: Region) {
-    const top = Buffer.createFilledWithCell(1, Math.max(buffer.columnCount, 20), {
-      glyph: ' ',
-      foregroundColour: 'black',
-      backgroundColour: '#888',
-    });
-    Array.from('File').forEach((glyph, idx) => {top.lines[0][idx+2].glyph = glyph});
-    top.lines[0][2].foregroundColour = '#800';
-
-    const bottom = Buffer.createFilledWithCell(1, buffer.columnCount, {
-      glyph: ' ',
-      foregroundColour: 'black',
-      backgroundColour: '#888',
-    });
-
-    return buffer.withBufferAt(0, 0, top).withBufferAt(buffer.lineCount-1, 0, bottom);
+  render(region: Region) : Buffer {
+    return Buffer.createFilledWithCell(
+      region.lineCount, region.columnCount, {
+        glyph: ' ', foregroundColour: 'white', backgroundColour: 'black',
+      }
+    );
   }
 };
 

@@ -1,20 +1,85 @@
+import {EventEmitter} from 'tsee';
+
 import {Buffer} from '../buffer';
 
-export class Display {
-  buffer: Buffer;
+export interface MouseEvent {
+  type: 'mousemove' | 'mouseclick' | 'mousedown' | 'mouseup';
+  line: number;
+  column: number;
+};
 
-  constructor(initialLineCount=25, initialColumnCount=80) {
-    this.buffer = Buffer.createFilledWithCell(initialLineCount, initialColumnCount, {
+export interface KeyEvent {
+  type: 'keyup' | 'keydown' | 'keypress';
+  altKey: boolean;
+  ctrlKey: boolean;
+  key: string;
+  location: number;
+  metaKey: boolean;
+  repeat: boolean;
+  shiftKey: boolean;
+};
+
+export interface ResizeEvent {
+  type: 'resize';
+  lineCount: number;
+  columnCount: number;
+};
+
+export interface UpdateEvent {
+  type: 'update';
+  buffer: Buffer;
+}
+
+type DisplayEventMap = {
+  mousemove: (event: MouseEvent) => void,
+  mousedown: (event: MouseEvent) => void,
+  mouseup: (event: MouseEvent) => void,
+  mouseclick: (event: MouseEvent) => void,
+  keyup: (event: KeyEvent) => void;
+  keydown: (event: KeyEvent) => void;
+  keypress: (event: KeyEvent) => void;
+  resize: (event: ResizeEvent) => void;
+  update: (event: UpdateEvent) => void;
+};
+
+export class Display extends EventEmitter<DisplayEventMap> {
+  private buffer: Buffer;
+
+  constructor(lineCount=25, columnCount=80) {
+    super();
+    this.buffer = Buffer.createFilledWithCell(lineCount, columnCount, {
       glyph: ' ', foregroundColour: 'white', backgroundColour: 'black',
     });
   }
 
-  resize(newLineCount: number, newColumnCount: number) {
-    this.buffer = this.redrawBuffer(
-      Buffer.createFilledWithCell(newLineCount, newLineCount, {
+  setBuffer(buffer: Buffer) {
+    const didResize = (
+      (buffer.lineCount !== this.buffer.lineCount)
+      || (buffer.columnCount !== this.buffer.columnCount)
+    );
+    this.buffer = buffer;
+    this.emit('update', {type: 'update', buffer: this.buffer});
+    if(didResize) {
+      this.emit('resize', {
+        type: 'resize', lineCount: this.buffer.lineCount, columnCount: this.buffer.columnCount,
+      });
+    }
+  }
+
+  resize(lineCount: number, columnCount: number) {
+    this.setBuffer(this.redrawBuffer(
+      Buffer.createFilledWithCell(lineCount, columnCount, {
         glyph: ' ', foregroundColour: 'white', backgroundColour: 'black',
       })
-    );
+    ));
+  }
+
+  postKeyEvent(event: KeyEvent) {
+    this.emit(event.type, event);
+  }
+
+  postMouseEvent(event: MouseEvent) {
+    this.emit(event.type, event);
   }
 
   private redrawBuffer(buffer: Buffer) {
@@ -32,6 +97,12 @@ export class Display {
       backgroundColour: '#888',
     });
 
-    return buffer.withBufferAt(0, 0, top).withBufferAt(buffer.lineCount-1, 0, bottom);
+    return (
+      Buffer.createFilledWithCell(buffer.lineCount, buffer.columnCount, {
+        glyph: '\u2591',
+        foregroundColour: '#008',
+        backgroundColour: '#888',
+      }).withBufferAt(0, 0, top).withBufferAt(buffer.lineCount-1, 0, bottom)
+    );
   }
 };

@@ -4,10 +4,13 @@ import useComponentSize from '@rehooks/component-size';
 
 import {Screen} from './components';
 import {Buffer} from './buffer';
-import {Display, Widget} from './widgets';
+import {Display, RootWidget} from './widgets';
 import {useScreenFont} from './fonts';
 
 import './App.css';
+
+const display = new Display();
+const rootWidget = new RootWidget(display);
 
 export default () => {
   const fontSpec = useScreenFont();
@@ -27,67 +30,28 @@ export default () => {
   // Determine if pointer is over screen
   const isMouseActive = isHovered && (mouseLine < lineCount) && (mouseColumn < columnCount);
 
+  // Store display buffer in state and update when display updates
   const [buffer, setBuffer] = React.useState<Buffer | null>(null);
+  React.useEffect(() => {display.on('update', ({buffer}) => {setBuffer(buffer);});});
 
-  const requestRedraw = () => {
-    if(!buffer) { return; }
-    const dirtyRegion = {
-      beginLine: 0, endLine: buffer.lineCount, beginColumn: 0, endColumn: buffer.columnCount
-    };
-    setBuffer(rootWidget.redraw(buffer, dirtyRegion));
-  }
-  const rootWidget = React.useMemo(() => new Widget({requestRedraw}), []);
+  // Tell display when window has resized
+  React.useEffect(() => {display.resize(lineCount, columnCount);}, [lineCount, columnCount]);
 
-  const redraw = (buffer: Buffer) => {
-    const top = Buffer.createFilledWithCell(1, Math.max(buffer.columnCount, 20), {
-      glyph: ' ',
-      foregroundColour: 'black',
-      backgroundColour: '#888',
-    });
-    Array.from('File').forEach((glyph, idx) => {top.lines[0][idx+2].glyph = glyph});
-    top.lines[0][2].foregroundColour = '#800';
-
-    const bottom = Buffer.createFilledWithCell(1, buffer.columnCount, {
-      glyph: ' ',
-      foregroundColour: 'black',
-      backgroundColour: '#888',
-    });
-
-    return buffer.withBufferAt(0, 0, top).withBufferAt(buffer.lineCount-1, 0, bottom);
-  }
-
-  /*
-  const randomChange = () => {
-    setBuffer(buffer => {
-      const lineIdx = Math.floor(Math.random() * buffer.lineCount);
-      const colIdx = Math.floor(Math.random() * buffer.columnCount);
-      return buffer.withBufferAt(lineIdx, colIdx, Buffer.createFilledWithCell(1, 1, {
-        glyph: 'X', foregroundColour: 'yellow', backgroundColour: 'blue',
-      }))
-    });
-    //window.setTimeout(randomChange, 25);
-  };
-  React.useEffect(() => {randomChange();}, []);
-  */
-
-  // Redraw root on resize.
-  React.useEffect(() => {
-    rootWidget.dispatchEvent({type: 'resize', lineCount, columnCount});
-    const buffer = Buffer.createFilledWithCell(lineCount, columnCount, {
-      glyph: '\u2591',
-      foregroundColour: '#008',
-      backgroundColour: '#888',
-    });
-    const dirtyRegion = {
-      beginLine: 0, endLine: buffer.lineCount, beginColumn: 0, endColumn: buffer.columnCount
-    };
-    setBuffer(rootWidget.redraw(buffer, dirtyRegion));
-  }, [columnCount, lineCount]);
-
+  // Keyboard event handler passes event to display
   const keyEventHandler: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
-    const {type, key, shiftKey, ctrlKey, metaKey, altKey} = event;
-    if((type !== 'keyup') && (type !== 'keydown')) { return; }
-    rootWidget.dispatchEvent({type, key, shiftKey, ctrlKey, metaKey, altKey});
+    const {type, key, shiftKey, ctrlKey, metaKey, altKey, location, repeat} = event;
+    if((type === 'keyup') || (type === 'keydown') || (type === 'keypress')) {
+      display.postKeyEvent({type, key, shiftKey, ctrlKey, altKey, metaKey, location, repeat});
+    }
+  };
+
+  // Mouse event handler passes event to display
+  const mouseEventHandler: React.MouseEventHandler<HTMLDivElement> = (event) => {
+    let {type} = event;
+    if(type === 'click') { type = 'mouseclick'; }
+    if((type === 'mousemove') || (type === 'mouseclick') || (type === 'mousedown') || (type === 'mouseup')) {
+      display.postMouseEvent({type, line: mouseLine, column: mouseColumn});
+    }
   };
 
   return (
@@ -95,6 +59,11 @@ export default () => {
       ref={ref}
       onKeyDown={keyEventHandler}
       onKeyUp={keyEventHandler}
+      onKeyPress={keyEventHandler}
+      onMouseMove={mouseEventHandler}
+      onMouseDown={mouseEventHandler}
+      onMouseUp={mouseEventHandler}
+      onClick={mouseEventHandler}
       tabIndex={0}
     >
       <Screen
