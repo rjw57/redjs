@@ -1,32 +1,29 @@
 import * as React from 'react';
 import useComponentSize from '@rehooks/component-size';
-import {useMouseHovered} from 'react-use';
 
 import {Buffer} from '../buffer';
-import {useScreenFont} from '../fonts';
+import {FontSpec} from '../fonts';
 
 export interface ScreenProps extends React.ComponentProps<'canvas'> {
-  buffer: Buffer;
-  onResize?: (event: {lineCount: number, columnCount: number}) => void;
-  onMouseCellMove?: (event: {line: number, column: number}) => void;
+  buffer?: Buffer | null;
+  fontSpec: FontSpec;
+  showMouse?: boolean;
+  mouseLine?: number;
+  mouseColumn?: number;
 }
 
 export const Screen = (
-  {buffer, onResize, onMouseCellMove, ...elementProps}: ScreenProps
+  { buffer=null, fontSpec, showMouse=false, mouseLine=0, mouseColumn=0, ...elementProps }: ScreenProps
 ) => {
   const ref = React.useRef<HTMLCanvasElement>(null);
-  const {elX: mouseX, elY: mouseY} = useMouseHovered(ref, {whenHovered: true});
-
   const {width, height} = useComponentSize(ref);
-  const {font, glyphWidth, glyphHeight} = useScreenFont();
+  const {font, glyphWidth, glyphHeight} = fontSpec;
   const lastDrawnBufferRef = React.useRef<Buffer | null>(null);
-  const lastDrawnMouseCell = React.useRef<{line: number, column: number} | null>(null);
+  const lastDrawnMouseCellRef = React.useRef<{line: number, column: number} | null>(null);
 
   const lineCount = Math.floor(height / glyphHeight);
   const columnCount = Math.floor(width / glyphWidth);
   const scale = window.devicePixelRatio;
-  const mouseLine = Math.min(lineCount-1, Math.floor(mouseY / glyphHeight));
-  const mouseColumn = Math.min(columnCount-1, Math.floor(mouseX / glyphWidth));
 
   const invertCell = (ctx: CanvasRenderingContext2D, line: number, column: number) => {
     ctx.save();
@@ -37,11 +34,11 @@ export const Screen = (
   }
 
   const redraw = (redrawAll: boolean = false) => {
-    const lastDrawnBuffer = lastDrawnBufferRef.current;
-
     if(!ref.current) { return; }
     const ctx = ref.current.getContext('2d', {alpha: false});
     if(!ctx) { return; }
+
+    const lastDrawnBuffer = lastDrawnBufferRef.current;
 
     ctx.save();
 
@@ -51,8 +48,9 @@ export const Screen = (
     // If the buffer size has changed, always redraw everything.
     redrawAll = (
       redrawAll
-      || (!!lastDrawnBuffer && (lastDrawnBuffer.lineCount != buffer.lineCount))
-      || (!!lastDrawnBuffer && (lastDrawnBuffer.columnCount != buffer.columnCount))
+      || (!!lastDrawnBuffer && !!buffer && (lastDrawnBuffer.lineCount != buffer.lineCount))
+      || (!!lastDrawnBuffer && !!buffer && (lastDrawnBuffer.columnCount != buffer.columnCount))
+      || (!!lastDrawnBuffer && !buffer)
     );
 
     // When redrawing the entire screen, clear it first.
@@ -62,11 +60,11 @@ export const Screen = (
     }
 
     // If not redrawing the entire screen, re-invert the mouse cell if we drew it.
-    if(!redrawAll && lastDrawnMouseCell.current) {
-      invertCell(ctx, lastDrawnMouseCell.current.line, lastDrawnMouseCell.current.column);
+    if(!redrawAll && lastDrawnMouseCellRef.current) {
+      invertCell(ctx, lastDrawnMouseCellRef.current.line, lastDrawnMouseCellRef.current.column);
     }
 
-    buffer.lines.forEach((line, lineIdx) => {
+    buffer && buffer.lines.forEach((line, lineIdx) => {
       const lastDrawnLine = lastDrawnBufferRef.current && lastDrawnBufferRef.current.lines[lineIdx];
       const topY = lineIdx * glyphHeight;
       if(redrawAll || (lastDrawnLine !== line)) {
@@ -84,32 +82,27 @@ export const Screen = (
       }
     });
 
-    // Invert mouse cell
-    invertCell(ctx, mouseLine, mouseColumn);
-    lastDrawnMouseCell.current = {line: mouseLine, column: mouseColumn};
+    // Invert mouse cell if it is shown.
+    if(showMouse) {
+      invertCell(ctx, mouseLine, mouseColumn);
+      lastDrawnMouseCellRef.current = {line: mouseLine, column: mouseColumn};
+    } else {
+      lastDrawnMouseCellRef.current = null;
+    }
 
     ctx.restore();
 
     lastDrawnBufferRef.current = buffer;
   };
 
-  React.useEffect(() => {
-    onMouseCellMove && onMouseCellMove({line: mouseLine, column: mouseColumn});
-    redraw(false);
-  }, [mouseLine, mouseColumn]);
-
-  React.useEffect(() => {
-    onResize && onResize({lineCount, columnCount});
-  }, [lineCount, columnCount]);
-
+  React.useEffect(() => {redraw(false);}, [mouseLine, mouseColumn, showMouse, buffer]);
+  React.useEffect(() => {redraw(true);}, [fontSpec]);
   React.useEffect(() => {
     if(!ref.current) { return; }
     ref.current.width = width * scale;
     ref.current.height = height * scale;
     redraw(true);
   }, [width, height]);
-  React.useEffect(() => {redraw(true);}, [font]);
-  React.useEffect(() => {redraw(false);}, [buffer]);
 
   return <canvas ref={ref} {...elementProps} />;
 };

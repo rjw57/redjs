@@ -14,8 +14,9 @@ export const useScreenFont = () => {
   });
 
   React.useEffect(() => {
-    new FontFace('Screen', `url(${screenFontUrl})`).load().then(fontFace => {
-      document.fonts.add(fontFace);
+    const fontFace = new FontFace('Screen', `url(${screenFontUrl})`)
+    document.fonts.add(fontFace);
+    fontFace.load().then(fontFace => {
       setFontSpec({font: `16px "${fontFace.family}"`, glyphWidth: 9, glyphHeight: 16});
     });
   }, [setFontSpec]);

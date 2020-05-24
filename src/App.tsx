@@ -1,26 +1,36 @@
 import * as React from 'react';
+import {useMouseHovered, useHoverDirty} from 'react-use';
+import useComponentSize from '@rehooks/component-size';
 
 import {Screen} from './components';
 import {Buffer} from './buffer';
 import {Widget} from './widgets';
+import {useScreenFont} from './fonts';
 
 import './App.css';
 
 export default () => {
-  const [mousePosition, setMousePosition] = React.useState<{line: number, column: number} | null>(null);
+  const fontSpec = useScreenFont();
+  const ref = React.useRef<HTMLDivElement>(null);
+  const {elX: mouseX, elY: mouseY} = useMouseHovered(ref, {whenHovered: true});
+  const {width, height} = useComponentSize(ref);
+  const isHovered = useHoverDirty(ref);
 
-  const [buffer, setBuffer] = React.useState<Buffer>(
-    Buffer.createFilledWithCell(
-      25, 80,
-      {
-        glyph: '\u2591',
-        foregroundColour: '#00f',
-        backgroundColour: '#888',
-      },
-    )
-  );
+  // Compute current mouse line and column
+  const mouseLine = Math.floor(mouseY / fontSpec.glyphHeight);
+  const mouseColumn = Math.floor(mouseX / fontSpec.glyphWidth);
+
+  // Compute screen size in lines and columns
+  const lineCount = Math.floor(height / fontSpec.glyphHeight);
+  const columnCount = Math.floor(width / fontSpec.glyphWidth);
+
+  // Determine if pointer is over screen
+  const isMouseActive = isHovered && (mouseLine < lineCount) && (mouseColumn < columnCount);
+
+  const [buffer, setBuffer] = React.useState<Buffer | null>(null);
 
   const requestRedraw = () => {
+    if(!buffer) { return; }
     const dirtyRegion = {
       beginLine: 0, endLine: buffer.lineCount, beginColumn: 0, endColumn: buffer.columnCount
     };
@@ -46,6 +56,7 @@ export default () => {
     return buffer.withBufferAt(0, 0, top).withBufferAt(buffer.lineCount-1, 0, bottom);
   }
 
+  /*
   const randomChange = () => {
     setBuffer(buffer => {
       const lineIdx = Math.floor(Math.random() * buffer.lineCount);
@@ -54,13 +65,13 @@ export default () => {
         glyph: 'X', foregroundColour: 'yellow', backgroundColour: 'blue',
       }))
     });
-    window.setTimeout(randomChange, 25);
+    //window.setTimeout(randomChange, 25);
   };
   React.useEffect(() => {randomChange();}, []);
+  */
 
-  const resizeHandler: React.ComponentProps<typeof Screen>['onResize'] = (
-    {lineCount, columnCount}
-  ) => {
+  // Redraw root on resize.
+  React.useEffect(() => {
     rootWidget.dispatchEvent({type: 'resize', lineCount, columnCount});
     const buffer = Buffer.createFilledWithCell(lineCount, columnCount, {
       glyph: '\u2591',
@@ -71,7 +82,7 @@ export default () => {
       beginLine: 0, endLine: buffer.lineCount, beginColumn: 0, endColumn: buffer.columnCount
     };
     setBuffer(rootWidget.redraw(buffer, dirtyRegion));
-  };
+  }, [columnCount, lineCount]);
 
   const keyEventHandler: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
     const {type, key, shiftKey, ctrlKey, metaKey, altKey} = event;
@@ -81,6 +92,7 @@ export default () => {
 
   return (
     <div className="app"
+      ref={ref}
       onKeyDown={keyEventHandler}
       onKeyUp={keyEventHandler}
       tabIndex={0}
@@ -88,15 +100,10 @@ export default () => {
       <Screen
         className="app-screen"
         buffer={buffer}
-        onResize={resizeHandler}
-        onMouseCellMove={event => {
-          const {line, column} = event;
-          setMousePosition({line, column});
-          rootWidget.dispatchEvent({type: 'mousemove', line, column});
-        }}
-        onClick={() => {mousePosition && rootWidget.dispatchEvent({type: 'mouseclick', ...mousePosition});}}
-        onMouseDown={() => {mousePosition && rootWidget.dispatchEvent({type: 'mousedown', ...mousePosition});}}
-        onMouseUp={() => {mousePosition && rootWidget.dispatchEvent({type: 'mouseup', ...mousePosition});}}
+        fontSpec={fontSpec}
+        showMouse={isMouseActive}
+        mouseLine={mouseLine}
+        mouseColumn={mouseColumn}
       />
     </div>
   );
