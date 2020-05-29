@@ -1,20 +1,58 @@
+import {EventEmitter} from 'tsee';
+
 import {Buffer} from '../buffer';
-import {Region} from './types';
+import {Region, Size, SizeHint} from './types';
 
-export class Widget {
+export type WidgetEventMap = {
+  requestredraw: (region: Region) => void;
+  resize: (size: Size) => void;
+};
+
+export class Widget extends EventEmitter<WidgetEventMap> {
   parent: Widget | null;
-  size: {lineCount: number, columnCount: number};
+  size: Size;
 
-  constructor(parent: Widget | null) {
-    this.parent = parent;
+  constructor() {
+    super();
+    this.parent = null;
     this.size = {lineCount: 0, columnCount: 0};
   }
 
-  setSize(lineCount: number, columnCount: number) {
-    this.size = {lineCount, columnCount};
+  add(child: Widget) {
+    child.parent = this;
   }
 
-  render(region: Region) : Buffer {
+  remove(child: Widget) {
+    if(child.parent === this) {
+      child.parent = null;
+    }
+  }
+
+  requestRedraw(region?: Region) {
+    this.emit('requestredraw', region || {firstLine: 0, firstColumn: 0, ...this.size});
+  }
+
+  setSize(lineCount: number, columnCount: number) {
+    if((lineCount === this.size.lineCount) && (columnCount === this.size.columnCount)) {
+      return;
+    }
+    this.size = {lineCount, columnCount};
+    this.requestRedraw();
+  }
+
+  idealSize(hint: SizeHint = {}) : Size {
+    return {...this.size, ...hint};
+  }
+
+  minimumSize(hint: SizeHint = {}) : Size {
+    return {lineCount: 0, columnCount: 0, ...hint};
+  }
+
+  maximumSize(hint: SizeHint = {}) : Size {
+    return {lineCount: Infinity, columnCount: Infinity, ...hint};
+  }
+
+  redraw(region: Region) : Buffer {
     return Buffer.createFilledWithCell(
       region.lineCount, region.columnCount, {
         glyph: ' ', foregroundColour: 'white', backgroundColour: 'black',

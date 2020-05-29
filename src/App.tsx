@@ -4,13 +4,32 @@ import useComponentSize from '@rehooks/component-size';
 
 import {Screen} from './components';
 import {Buffer} from './buffer';
-import {Display, RootWidget} from './widgets';
+import {Display, FilledWidget, BufferWidget, VBoxWidget} from './widgets';
 import {useScreenFont} from './fonts';
 
 import './App.css';
 
 const display = new Display();
-const rootWidget = new RootWidget(display);
+
+const rootWidget = new VBoxWidget();
+display.add(rootWidget);
+
+const bgWidget = new FilledWidget({
+  glyph: '\u2591',
+  foregroundColour: '#008',
+  backgroundColour: '#888',
+});
+rootWidget.add(bgWidget);
+
+const top = Buffer.createFilledWithCell(1, 20, {
+  glyph: ' ',
+  foregroundColour: 'black',
+  backgroundColour: '#888',
+});
+Array.from('File').forEach((glyph, idx) => {top.lines[0][idx+2].glyph = glyph});
+top.lines[0][2].foregroundColour = '#800';
+const topWidget = new BufferWidget(top);
+rootWidget.add(topWidget);
 
 export default () => {
   const fontSpec = useScreenFont();

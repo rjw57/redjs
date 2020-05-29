@@ -1,6 +1,14 @@
-export interface Region {
-  firstLine: number;
+export interface Size {
   lineCount: number;
-  firstColumn: number;
   columnCount: number;
+};
+
+export interface SizeHint {
+  lineCount?: number;
+  columnCount?: number;
+};
+
+export interface Region extends Size {
+  firstLine: number;
+  firstColumn: number;
 };

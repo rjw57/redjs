@@ -1,4 +1,6 @@
 export {Display} from './Display';
-export {RootWidget} from './RootWidget';
+export {BufferWidget} from './BufferWidget';
+export {FilledWidget} from './FilledWidget';
 export {Widget} from './Widget';
-export type {Region} from './types';
+export {VBoxWidget} from './VBoxWidget';
+export type {Region, Size} from './types';

@@ -1,6 +1,8 @@
 import {EventEmitter} from 'tsee';
 
 import {Buffer} from '../buffer';
+import {Widget} from './Widget';
+import {Region} from './types';
 
 export interface MouseEvent {
   type: 'mousemove' | 'mouseclick' | 'mousedown' | 'mouseup';
@@ -44,12 +46,36 @@ type DisplayEventMap = {
 
 export class Display extends EventEmitter<DisplayEventMap> {
   private buffer: Buffer;
+  private rootWidget: Widget | null;
+  private rootWidgetRequestRedrawHandler: (region: Region) => void;
 
   constructor(lineCount=25, columnCount=80) {
     super();
+
+    this.rootWidget = null;
     this.buffer = Buffer.createFilledWithCell(lineCount, columnCount, {
       glyph: ' ', foregroundColour: 'white', backgroundColour: 'black',
     });
+
+    this.rootWidgetRequestRedrawHandler = (region: Region) => {
+      if(this.rootWidget) {
+        this.setBuffer(this.buffer.withBufferAt(
+          region.firstLine, region.firstColumn, this.rootWidget.redraw(region)
+        ));
+      }
+    }
+  }
+
+  add(widget: Widget) {
+    if(this.rootWidget) {
+      this.rootWidget.off('requestredraw', this.rootWidgetRequestRedrawHandler);
+    }
+    this.rootWidget = widget;
+    if(this.rootWidget) {
+      this.rootWidget.setSize(this.buffer.lineCount, this.buffer.columnCount);
+      this.rootWidget.on('requestredraw', this.rootWidgetRequestRedrawHandler);
+      this.rootWidget.requestRedraw();
+    }
   }
 
   setBuffer(buffer: Buffer) {
@@ -67,11 +93,12 @@ export class Display extends EventEmitter<DisplayEventMap> {
   }
 
   resize(lineCount: number, columnCount: number) {
-    this.setBuffer(this.redrawBuffer(
-      Buffer.createFilledWithCell(lineCount, columnCount, {
+    this.setBuffer(Buffer.createFilledWithCell(lineCount, columnCount, {
         glyph: ' ', foregroundColour: 'white', backgroundColour: 'black',
-      })
-    ));
+    }));
+    if(this.rootWidget) {
+      this.rootWidget.setSize(this.buffer.lineCount, this.buffer.columnCount);
+    }
   }
 
   postKeyEvent(event: KeyEvent) {
