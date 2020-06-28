@@ -25,10 +25,14 @@
   },
   "dependencies": {
     "@rehooks/component-size": "^1.0.3",
+    "@types/resize-observer-browser": "^0.1.3",
+    "@types/styled-components": "^5.1.0",
+    "babel-plugin-styled-components": "^1.10.7",
     "electron-is-dev": "^1.0.1",
     "react": "^16.8.3",
     "react-dom": "^16.8.3",
-    "react-scripts": "2.1.5"
+    "react-scripts": "2.1.5",
+    "styled-components": "^5.1.1"
   },
   "homepage": "./",
   "main": "public/electron.js",
@@ -65,5 +69,11 @@
     "tsee": "^1.3.0",
     "typescript": "^3.3.3333",
     "wait-on": "^3.2.0"
+  },
+  "resolutions": {
+    "styled-components": "^5"
+  },
+  "babel": {
+    "plugins": ["babel-plugin-styled-components"]
   }
 }
