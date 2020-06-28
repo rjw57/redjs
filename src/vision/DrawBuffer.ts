@@ -32,7 +32,7 @@ export default class DrawBuffer {
 
   pushState() {
     this._stateStack.push({
-      clipRect: this._clipRect
+      clipRect: this._clipRect,
     });
   }
 
@@ -40,6 +40,10 @@ export default class DrawBuffer {
     const state = this._stateStack.pop();
     if(!state) { throw new Error('No state to pop'); }
     this._clipRect = state.clipRect;
+  }
+
+  getClipRect() {
+    return this._clipRect;
   }
 
   clearClipRect() {
@@ -97,14 +101,14 @@ export default class DrawBuffer {
     return (this._dirtyRect.width > 0) && (this._dirtyRect.height > 0);
   }
 
-  // Convert linear index to point in buffer
+  // Convert linear index to physical point in buffer
   indexToPoint(index: number): Point {
     const x = index % this._size.width;
     const y = (index - x) / this._size.width;
     return {x, y};
   }
 
-  // Convert point to linear index
+  // Convert physical point to linear index
   pointToIndex({x, y}: Point) {
     return x + y * this._size.width;
   }
