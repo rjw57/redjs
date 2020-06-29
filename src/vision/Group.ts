@@ -1,12 +1,10 @@
-import { PackOptions } from './types';
-
 import View from './View';
 import Rect from './Rect';
 import DrawBuffer from './DrawBuffer';
 
 export default class Group extends View {
   protected _drawBuffer?: DrawBuffer;
-  protected _views: [View, PackOptions][];
+  protected _views: View[];
   protected _drawTimeout: null | ReturnType<typeof setTimeout>;
 
   constructor(bounds: Rect) {
@@ -20,26 +18,17 @@ export default class Group extends View {
     this.scheduleDraw(this.getExtent());
   }
 
-  addView(view: View, packOptions: PackOptions = {}) {
-    this._views.push([view, packOptions]);
+  addView(view: View) {
+    this._views.push(view);
     view.claim(this);
-    this.repackViews();
     this.scheduleDraw(this.getBounds());
   }
 
   removeView(view: View) {
-    this._views = this._views.filter(([v, ..._]) => v !== view);
+    this._views = this._views.filter(v => v !== view);
     view.claim();
-    this.repackViews();
     this.scheduleDraw(this.getBounds());
   }
-
-  setBounds(...args: Parameters<View["setBounds"]>) {
-    super.setBounds(...args);
-    this.repackViews();
-  }
-
-  repackViews() {}
 
   scheduleDraw(rect?: Rect) {
     if(this._drawTimeout === null) {
@@ -70,7 +59,7 @@ export default class Group extends View {
 
     // Draw child views back to front
     for(let idx=this._views.length-1; idx >= 0; --idx) {
-      const [view, ..._] = this._views[idx];
+      const view = this._views[idx];
       drawBuffer.pushState();
       drawBuffer.clip(view.getBounds());
       view.draw(drawBuffer);

@@ -15,19 +15,19 @@ const screenGroup = new VBox(new Rect({x: 0, y: 0}, {width: 80, height: 25}))
 screenGroup.addView(
   new FilledFrame(
     new Rect({x: 50, y: 0}, {width: 50, height: 1}),
-    'x', { foregroundFillStyle: '#00f', backgroundFillStyle: '#888' },
+    {glyph: 'x', attributes: { foregroundFillStyle: '#00f', backgroundFillStyle: '#888' }},
   ), { grow: 0.5 }
 );
 screenGroup.addView(
   new FilledFrame(
     new Rect({x: 50, y: 0}, {width: 50, height: 20}),
-    '\u2591', { foregroundFillStyle: '#00f', backgroundFillStyle: '#888' },
+    {glyph: '\u2591', attributes: { foregroundFillStyle: '#00f', backgroundFillStyle: '#888' }},
   ), { grow: 1 }
 );
 screenGroup.addView(
   new FilledFrame(
     new Rect({x: 50, y: 0}, {width: 50, height: 1}),
-    'x', { foregroundFillStyle: '#00f', backgroundFillStyle: '#888' },
+    {glyph: 'x', attributes: { foregroundFillStyle: '#00f', backgroundFillStyle: '#888' }},
   ), { grow: 0.2 }
 );
 
