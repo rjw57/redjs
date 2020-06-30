@@ -1,17 +1,21 @@
 import { PackOptions, Size } from './types';
 import Group from './Group';
 import Rect from './Rect';
-import View from './View';
+import View, { ViewOptions } from './View';
 
 const DEFAULT_PACK_OPTIONS = {grow: 0};
-const DEFAULT_BOX_OPTIONS = {spacing: 0};
+
+export interface BoxOptions extends ViewOptions {
+  orientation: 'vertical' | 'horizontal';
+};
 
 export default class Box extends Group {
   protected _packOptionsMap: Map<View, PackOptions>;
   protected _orientation: 'vertical' | 'horizontal';
 
-  constructor(bounds: Rect, orientation: 'vertical' | 'horizontal') {
-    super(bounds);
+  constructor(opts: BoxOptions) {
+    super(opts);
+    const {orientation} = opts;
     this._packOptionsMap = new Map();
     this._orientation = orientation;
   }
@@ -104,13 +108,13 @@ export default class Box extends Group {
 };
 
 export class VBox extends Box {
-  constructor(bounds: Rect) {
-    super(bounds, 'vertical');
+  constructor(opts?: ViewOptions) {
+    super({...opts, orientation: 'vertical'});
   }
 };
 
 export class HBox extends Box {
-  constructor(bounds: Rect) {
-    super(bounds, 'horizontal');
+  constructor(opts?: ViewOptions) {
+    super({...opts, orientation: 'horizontal'});
   }
 };

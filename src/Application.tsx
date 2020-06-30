@@ -15,28 +15,28 @@ import {
 
 const initRect = new Rect({x: 0, y: 0}, {width: 1, height: 1});
 const screenGroup =
-  new VBox(initRect)
+  new VBox()
   .addView(
-    new View(initRect)
+    new View()
     .setMinimumSize({ width: 0, height: 3 })
     .setBackground('x', {foregroundFillStyle: '#00f', backgroundFillStyle: '#888'})
   )
   .addView(
-    new Frame(initRect)
+    new Frame()
     .addView(
-      new HBox(initRect)
+      new HBox()
       .addView(
-        new View(initRect)
+        new View()
         .setBackground('?', {foregroundFillStyle: '#ff0', backgroundFillStyle: '#00f'})
         , {grow: 1}
       )
       .addView(
-        new View(initRect)
+        new View()
         .setBackground('\u2591', {foregroundFillStyle: '#00f', backgroundFillStyle: '#888'})
         , {grow: 2}
       )
       .addView(
-        new View(initRect)
+        new View()
         .setBackground('/', {foregroundFillStyle: '#ff0', backgroundFillStyle: '#00f'})
         , {grow: 3}
       )
@@ -46,7 +46,7 @@ const screenGroup =
     , {grow: 1}
   )
   .addView(
-    new View(initRect)
+    new View()
     .setMinimumSize({ width: 0, height: 1 })
     .setBackground('x', {foregroundFillStyle: '#00f', backgroundFillStyle: '#888'})
   );

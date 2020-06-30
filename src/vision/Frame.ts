@@ -2,7 +2,7 @@ import { Size, CellAttributes } from './types';
 import DrawBuffer from './DrawBuffer';
 import Rect from './Rect';
 import Group from './Group';
-import View from './View';
+import View, { ViewOptions } from './View';
 
 const FRAME_CHARS = {
   light: {
@@ -25,8 +25,8 @@ export default class Frame extends Group {
   protected _style: keyof typeof FRAME_CHARS;
   protected _frameAttributes?: CellAttributes;
 
-  constructor(bounds: Rect) {
-    super(bounds);
+  constructor(opts?: ViewOptions) {
+    super(opts);
     this._style = 'light';
   }
 

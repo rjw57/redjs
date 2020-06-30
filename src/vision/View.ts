@@ -3,6 +3,14 @@ import DrawBuffer from './DrawBuffer';
 import Rect from './Rect';
 import Group from './Group';
 
+const DEFAULT_OPTS = {
+  bounds: new Rect({x: 0, y: 0}, {width: 1, height: 1}),
+};
+
+export interface ViewOptions {
+  bounds?: Rect;
+};
+
 export default class View {
   protected _bounds: Rect;
   protected _ownerGroup?: Group;
@@ -11,7 +19,8 @@ export default class View {
   protected _backgroundGlyph: string;
   protected _backgroundAttributes: CellAttributes;
 
-  constructor(bounds: Rect) {
+  constructor(opts?: ViewOptions) {
+    const {bounds} = {...DEFAULT_OPTS, ...opts};
     this._bounds = bounds;
     this._minimumSize = {width: 0, height: 0};
     this._maximumSize = {width: Infinity, height: Infinity};

@@ -1,4 +1,4 @@
-import View from './View';
+import View, { ViewOptions } from './View';
 import Rect from './Rect';
 import DrawBuffer from './DrawBuffer';
 
@@ -7,8 +7,8 @@ export default class Group extends View {
   protected _views: View[];
   protected _drawTimeout: null | ReturnType<typeof setTimeout>;
 
-  constructor(bounds: Rect) {
-    super(bounds);
+  constructor(opts?: ViewOptions) {
+    super(opts);
     this._views = [];
     this._drawTimeout = null;
   }
