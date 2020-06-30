@@ -4,20 +4,23 @@ import Rect from './Rect';
 import View from './View';
 
 const DEFAULT_PACK_OPTIONS = {grow: 0};
+const DEFAULT_BOX_OPTIONS = {spacing: 0};
 
-export class VBox extends Group {
+export default class Box extends Group {
   protected _packOptionsMap: Map<View, PackOptions>;
+  protected _orientation: 'vertical' | 'horizontal';
 
-  constructor(bounds: Rect) {
+  constructor(bounds: Rect, orientation: 'vertical' | 'horizontal') {
     super(bounds);
     this._packOptionsMap = new Map();
+    this._orientation = orientation;
   }
 
   addView(view: View, packOptions: PackOptions = {}) {
-    super.addView(view);
-    packOptions = {...DEFAULT_PACK_OPTIONS, ...packOptions};
+    const returnValue = super.addView(view);
     this._packOptionsMap.set(view, packOptions);
     this.repackViews();
+    return returnValue;
   }
 
   removeView(view: View) {
@@ -29,49 +32,85 @@ export class VBox extends Group {
   setBounds(...args: Parameters<View["setBounds"]>) {
     super.setBounds(...args);
     this.repackViews();
+    return this;
   }
 
   repackViews() {
-    const bounds = this.getBounds();
+    const extent = this.getExtent();
 
-    // Compute the minimum along axis size of all of the views and thereby determine the extra
-    // space which needs apportioning
-    const minimumAlongAxisSize = this._views.reduce((accumulator, view) => {
-      return accumulator + view.getMinimumSize().height;
-    }, 0);
-    let remainingAlongAxisSize = Math.max(0, bounds.size.height - minimumAlongAxisSize);
+    // How much space do we have to pack views?
+    const availableSpace =
+      (this._orientation === 'vertical') ? extent.size.height : extent.size.width;
 
-    // Compute the total grow weight for the views.
-    const totalGrowWeight = this._views
-      .map(v => this.getPackOptionsForView(v))
-      .reduce((accumulator, opts) => {
-        const {grow} = {...DEFAULT_PACK_OPTIONS, ...opts};
-        return accumulator + grow;
-      }, 0);
+    // Depending on the orientation of the container, we pass the extent width or height as a hint
+    // to sub-views.
+    const widthHint = (this._orientation === 'vertical') ? extent.size.width : null;
+    const heightHint = (this._orientation === 'vertical') ? null : extent.size.height;
 
-    // Compute the extra space per unit grow.
-    const spacePerGrow = (totalGrowWeight === 0) ? 0 : remainingAlongAxisSize / totalGrowWeight;
+    // Compute the ideal sizes along the appropriate direction for each packed view and
+    // store in an array alongside the actual cross-axis size for each view and the pack
+    // parameters.
+    const augmentedViews = this._views.map(view => {
+      const idealSize = view.getIdealSize(widthHint, heightHint);
+      const packOptions = this.getPackOptionsForView(view);
+      return {view, idealSize, packOptions};
+    });
 
+    // Compute the total ideal length for all views assuming no growing.
+    const minimumLength = augmentedViews.reduce((sum, {view, idealSize}) => (
+      sum + ((this._orientation === 'vertical') ? idealSize.height : idealSize.width)
+    ), 0);
+
+    // Compute the total grow weighting.
+    const totalGrow = augmentedViews.reduce((sum, {packOptions: {grow}}) => sum + grow, 0);
+
+    // How much length do we have left to apportion to the growing views?
+    let lengthToApportion = Math.max(0, availableSpace - minimumLength);
+
+    // Hence, compute the extra space per grow weight.
+    const lengthPerGrow = (lengthToApportion !== 0) ? lengthToApportion / totalGrow : 0;
+
+    // Pack all views.
     let currentPosition = 0;
-    this._views.forEach(view => {
-      const {grow} = {...DEFAULT_PACK_OPTIONS, ...this.getPackOptionsForView(view)};
-      const extraGrow = Math.min(remainingAlongAxisSize, Math.round(spacePerGrow * grow));
-      remainingAlongAxisSize -= extraGrow;
+    augmentedViews.forEach(({view, idealSize, packOptions: {grow}}) => {
+      const extraLength = Math.min(lengthToApportion, Math.round(lengthPerGrow * grow));
+      lengthToApportion -= extraLength;
 
-      const minSize = view.getMinimumSize();
-      const maxSize = view.getMaximumSize();
-      const crossLength = Math.min(maxSize.width, bounds.width);
-      const alongLength = minSize.height + extraGrow;
-      view.setBounds(
-        new Rect({x: 0, y: currentPosition}, {width: crossLength, height: alongLength})
-      );
-      currentPosition += alongLength;
-    })
+      if(this._orientation === 'vertical') {
+        view.setBounds(
+          new Rect(
+            {x: 0, y: currentPosition},
+            {width: idealSize.width, height: idealSize.height + extraLength}
+          )
+        );
+        currentPosition += idealSize.height + extraLength;
+      } else {
+        view.setBounds(
+          new Rect(
+            {x: currentPosition, y: 0},
+            {width: idealSize.width + extraLength, height: idealSize.height}
+          )
+        );
+        currentPosition += idealSize.width + extraLength;
+      }
+    });
 
     this.scheduleDraw();
   }
 
   protected getPackOptionsForView(view: View) {
-    return this._packOptionsMap.get(view) || DEFAULT_PACK_OPTIONS;
+    return {...DEFAULT_PACK_OPTIONS, ...this._packOptionsMap.get(view)};
+  }
+};
+
+export class VBox extends Box {
+  constructor(bounds: Rect) {
+    super(bounds, 'vertical');
+  }
+};
+
+export class HBox extends Box {
+  constructor(bounds: Rect) {
+    super(bounds, 'horizontal');
   }
 };

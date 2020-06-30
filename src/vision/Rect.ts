@@ -48,6 +48,24 @@ export default class Rect {
     const yRange = intersectRange(this.top, this.height, otherRect.top, otherRect.height);
     return new Rect({x: xRange.min, y: yRange.min}, {width: xRange.len, height: yRange.len});
   }
+
+  inset(widthInset: number, heightInset?: number) {
+    if(heightInset === undefined) { heightInset = widthInset; }
+    return new Rect(
+      {
+        x: Math.max(0, this.left + widthInset),
+        y: Math.max(0, this.top + heightInset),
+      },
+      {
+        width: Math.max(0, this.width - 2*widthInset),
+        height: Math.max(0, this.height - 2*heightInset),
+      }
+    );
+  }
+
+  offset({x, y}: Point) {
+    return new Rect({x: this.left + x, y: this.top + y}, this.size);
+  }
 };
 
 const intersectRange = (minA: number, aLen: number, minB: number, bLen: number): {min: number, len: number} => {

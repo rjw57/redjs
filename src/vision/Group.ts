@@ -15,19 +15,20 @@ export default class Group extends View {
 
   setDrawBuffer(drawBuffer: DrawBuffer) {
     this._drawBuffer = drawBuffer;
-    this.scheduleDraw(this.getExtent());
+    this.scheduleDraw();
   }
 
   addView(view: View) {
     this._views.push(view);
     view.claim(this);
-    this.scheduleDraw(this.getBounds());
+    this.scheduleDraw();
+    return this;
   }
 
   removeView(view: View) {
     this._views = this._views.filter(v => v !== view);
     view.claim();
-    this.scheduleDraw(this.getBounds());
+    this.scheduleDraw();
   }
 
   scheduleDraw(rect?: Rect) {
@@ -60,8 +61,10 @@ export default class Group extends View {
     // Draw child views back to front
     for(let idx=this._views.length-1; idx >= 0; --idx) {
       const view = this._views[idx];
+      const bounds = view.getBounds();
       drawBuffer.pushState();
-      drawBuffer.clip(view.getBounds());
+      drawBuffer.clip(bounds);
+      drawBuffer.offset(bounds.topLeft);
       view.draw(drawBuffer);
       drawBuffer.popState();
     }

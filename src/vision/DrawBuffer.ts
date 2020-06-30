@@ -13,18 +13,21 @@ const applyAttributes = (cell: Cell, attributes: AttributesParam) => {
 
 interface State {
   clipRect: Rect;
+  offset: Point;
 };
 
 export default class DrawBuffer {
   protected _dirtyRect: Rect;
   protected _size: Size;
-  protected _clipRect: Rect;
+  protected _clipRect: Rect; // in physical co-ordinates
+  protected _offset: Point;
   protected _cells: Cell[];
   protected _stateStack: State[];
 
   constructor() {
     this._dirtyRect = new Rect({x: 0, y: 0}, {width: 0, height: 0});
     this._clipRect = new Rect({x: 0, y: 0}, {width: 0, height: 0});
+    this._offset = {x: 0, y: 0};
     this._size = {width: 0, height: 0};
     this._cells = [];
     this._stateStack = [];
@@ -33,6 +36,7 @@ export default class DrawBuffer {
   pushState() {
     this._stateStack.push({
       clipRect: this._clipRect,
+      offset: this._offset,
     });
   }
 
@@ -40,10 +44,12 @@ export default class DrawBuffer {
     const state = this._stateStack.pop();
     if(!state) { throw new Error('No state to pop'); }
     this._clipRect = state.clipRect;
+    this._offset = state.offset;
   }
 
+  // Current clip rect in local co-ordinates.
   getClipRect() {
-    return this._clipRect;
+    return this._clipRect.offset({x: -this._offset.x, y: -this._offset.y});
   }
 
   clearClipRect() {
@@ -51,12 +57,19 @@ export default class DrawBuffer {
   }
 
   clip(rect: Rect) {
-    this._clipRect = this._clipRect.intersect(rect);
+    this._clipRect = this._clipRect.intersect(rect.offset(this._offset));
+  }
+
+  offset({x, y}: Point) {
+    this._offset = {x: this._offset.x + x, y: this._offset.y + y}
   }
 
   // Put a string at a point. Attributes are either new attributes or a function which
   // takes the existing cell attributes and returns new ones.
   putText(x: number, y: number, text: string, attributes: AttributesParam) {
+    x += this._offset.x;
+    y += this._offset.y;
+
     Array.from(text).forEach((glyph, glyphIndex) => {
       const p = {x: x + glyphIndex, y};
       if(!this._clipRect.contains(p)) { return; }
@@ -73,8 +86,8 @@ export default class DrawBuffer {
 
   // Fill a region
   fillRect(rect: Rect, glyph: string, attributes: AttributesParam) {
-    // Clip fill region to clip rect
-    rect = rect.intersect(this._clipRect);
+    // Clip fill region to clip rect and offset.
+    rect = rect.offset(this._offset).intersect(this._clipRect);
 
     // Early out if nothing left to draw
     if(rect.isZeroSized) { return; }

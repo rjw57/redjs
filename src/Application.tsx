@@ -6,30 +6,50 @@ import { useScreenFont } from './fonts';
 
 import {
   CanvasScreen,
-  FilledFrame,
-  VBox,
+  Frame,
+  HBox,
   Rect,
+  VBox,
+  View,
 } from './vision';
 
-const screenGroup = new VBox(new Rect({x: 0, y: 0}, {width: 80, height: 25}))
-screenGroup.addView(
-  new FilledFrame(
-    new Rect({x: 50, y: 0}, {width: 50, height: 1}),
-    {glyph: 'x', attributes: { foregroundFillStyle: '#00f', backgroundFillStyle: '#888' }},
-  ), { grow: 0.5 }
-);
-screenGroup.addView(
-  new FilledFrame(
-    new Rect({x: 50, y: 0}, {width: 50, height: 20}),
-    {glyph: '\u2591', attributes: { foregroundFillStyle: '#00f', backgroundFillStyle: '#888' }},
-  ), { grow: 1 }
-);
-screenGroup.addView(
-  new FilledFrame(
-    new Rect({x: 50, y: 0}, {width: 50, height: 1}),
-    {glyph: 'x', attributes: { foregroundFillStyle: '#00f', backgroundFillStyle: '#888' }},
-  ), { grow: 0.2 }
-);
+const initRect = new Rect({x: 0, y: 0}, {width: 1, height: 1});
+const screenGroup =
+  new VBox(initRect)
+  .addView(
+    new View(initRect)
+    .setMinimumSize({ width: 0, height: 3 })
+    .setBackground('x', {foregroundFillStyle: '#00f', backgroundFillStyle: '#888'})
+  )
+  .addView(
+    new Frame(initRect)
+    .addView(
+      new HBox(initRect)
+      .addView(
+        new View(initRect)
+        .setBackground('?', {foregroundFillStyle: '#ff0', backgroundFillStyle: '#00f'})
+        , {grow: 1}
+      )
+      .addView(
+        new View(initRect)
+        .setBackground('\u2591', {foregroundFillStyle: '#00f', backgroundFillStyle: '#888'})
+        , {grow: 2}
+      )
+      .addView(
+        new View(initRect)
+        .setBackground('/', {foregroundFillStyle: '#ff0', backgroundFillStyle: '#00f'})
+        , {grow: 3}
+      )
+    )
+    .setFrameAttributes({foregroundFillStyle: '#fff', backgroundFillStyle: '#00f'})
+    .setStyle('double')
+    , {grow: 1}
+  )
+  .addView(
+    new View(initRect)
+    .setMinimumSize({ width: 0, height: 1 })
+    .setBackground('x', {foregroundFillStyle: '#00f', backgroundFillStyle: '#888'})
+  );
 
 interface Props {
   className?: string;
